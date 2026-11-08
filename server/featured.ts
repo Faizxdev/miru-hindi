@@ -1,5 +1,6 @@
 import { fetchAnimeList, searchTMDB, fetchAnimeDetails } from "./scraper";
 import { HeroItem } from "@/lib/heroData";
+import { FALLBACK_FEATURED } from "@/lib/fallbackCatalog";
 
 function cleanTitle(text: string): string {
   if (!text) return "";
@@ -19,7 +20,9 @@ export async function getFeaturedAnime(): Promise<HeroItem[]> {
     const popularData = await fetchAnimeList(3);
     const rawItems = popularData.items?.slice(0, 6) || [];
 
-    if (rawItems.length === 0) return [];
+    if (rawItems.length === 0) {
+      return FALLBACK_FEATURED;
+    }
 
     const heroItems: HeroItem[] = (await Promise.all(
       rawItems.map(async (item): Promise<HeroItem | null> => {
@@ -57,7 +60,7 @@ export async function getFeaturedAnime(): Promise<HeroItem[]> {
             titleUrl: `/title/${encodeURIComponent(slug)}`,
             rating: tmdb?.vote_average ? tmdb.vote_average.toFixed(1) : undefined
           };
-        } catch (error) {
+        } catch {
           return null;
         }
       })
@@ -65,9 +68,8 @@ export async function getFeaturedAnime(): Promise<HeroItem[]> {
     .filter((item): item is HeroItem => item !== null)
     .slice(0, 6);
 
-    return heroItems;
-  } catch (error) {
-    console.error("error in getFeaturedAnime:", error);
-    return [];
+    return heroItems.length > 0 ? heroItems : FALLBACK_FEATURED;
+  } catch {
+    return FALLBACK_FEATURED;
   }
 }

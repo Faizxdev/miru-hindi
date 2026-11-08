@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { fetchAnimeList } from "@/server/scraper";
+import { FALLBACK_SERIES } from "@/lib/fallbackCatalog";
 import NewNavbar from "@/components/NewNavbar";
 import NewBottomNav from "@/components/NewBottomNav";
 import DesktopNav from "@/components/DesktopNav";
@@ -22,38 +23,14 @@ export default async function SeriesPage({ searchParams }: { searchParams: { pag
   const query = searchParams?.q || "";
 
   let data;
-  let error = null;
 
   try {
     data = await fetchAnimeList(page);
-  } catch (err) {
-    console.error("Error fetching series:", err);
-    error = err instanceof Error ? err.message : "Unknown error occurred";
+  } catch (err: any) {
+    console.warn("SeriesPage upstream fetch warning:", err?.message || "");
   }
 
-  const items = data?.items || [];
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-bg-base font-sans">
-        <NewNavbar />
-        <main className="w-full px-5 md:px-12 py-12 space-y-12 pb-24">
-          <div className="text-center space-y-2">
-            <h1 className="section-heading text-4xl">Series</h1>
-            <p className="section-subtitle">Discover and watch your favorite anime series</p>
-          </div>
-
-          <div className="bg-bg-surface border border-border-subtle rounded-md p-8 text-center max-w-2xl mx-auto">
-            <h3 className="section-heading text-xl mb-4">Error Loading Series</h3>
-            <p className="text-content-secondary mb-6">{error}</p>
-            <a href="/series" className="btn-primary inline-flex">Try Again</a>
-          </div>
-        </main>
-        <NewBottomNav />
-        <DesktopNav />
-      </div>
-    );
-  }
+  const items = (data?.items && data.items.length > 0) ? data.items : FALLBACK_SERIES;
 
   return (
     <div className="min-h-screen bg-bg-base font-sans">

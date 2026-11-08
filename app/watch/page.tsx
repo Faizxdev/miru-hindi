@@ -59,8 +59,8 @@ async function getData(episodeUrl: string) {
 async function getAnimeDetails(seriesUrl: string, postId: number, season: number) {
   try {
     return await fetchAnimeDetails({ url: seriesUrl, postId, season });
-  } catch (error) {
-    console.error('Error fetching anime details:', error);
+  } catch (error: any) {
+    console.warn('WatchPage: Warning fetching anime details:', error?.message || '');
     return null;
   }
 }
@@ -110,8 +110,8 @@ async function findAnimeBySlug(slug: string): Promise<{ url: string; postId?: nu
     }
 
     return null;
-  } catch (error) {
-    console.error('Error in findAnimeBySlug:', error);
+  } catch (error: any) {
+    console.warn('WatchPage: Warning in findAnimeBySlug:', error?.message || '');
     return null;
   }
 }
@@ -222,14 +222,14 @@ export default async function WatchPage({ searchParams }: { searchParams: { epis
               if (!resolvedPostId && info.postId) resolvedPostId = info.postId;
               console.log(`WatchPage: Resolved series URL: ${seriesUrl}, PostId: ${resolvedPostId}`);
             } else {
-              console.error(`WatchPage: Could not find series for slug: ${seriesSlug}`);
+              console.warn(`WatchPage: Could not find series for slug: ${seriesSlug}`);
               // Fallback: try to construct a series URL directly
               seriesUrl = `${BASE}/series/${seriesSlug}/`;
               console.log(`WatchPage: Using fallback series URL: ${seriesUrl}`);
             }
           }
         } else {
-          console.error(`WatchPage: Empty or invalid episode parameter: ${episodeParam}`);
+          console.warn(`WatchPage: Empty or invalid episode parameter: ${episodeParam}`);
           throw new Error('Invalid episode parameter');
         }
       }
@@ -238,8 +238,8 @@ export default async function WatchPage({ searchParams }: { searchParams: { epis
       episodeUrl = decoded;
       console.log(`WatchPage: Using full URL: ${episodeUrl}`);
     }
-  } catch (error) {
-    console.error(`WatchPage: Error processing episode parameter:`, error);
+  } catch (error: any) {
+    console.warn(`WatchPage: Warning processing episode parameter:`, error?.message || '');
     throw new Error(`Invalid episode URL: ${episodeParam}`);
   }
 
@@ -263,8 +263,8 @@ export default async function WatchPage({ searchParams }: { searchParams: { epis
   try {
     sources = await getData(episodeUrl);
     console.log(`WatchPage: Found ${sources.length} player sources`);
-  } catch (error) {
-    console.error(`WatchPage: Error fetching episode players:`, error);
+  } catch (error: any) {
+    console.warn(`WatchPage: Warning fetching episode players:`, error?.message || '');
     // Return error page instead of crashing
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -297,13 +297,13 @@ export default async function WatchPage({ searchParams }: { searchParams: { epis
         episodes = animeDetails?.episodes || [];
         seasons = animeDetails?.seasons || [];
         console.log(`WatchPage: Fetched ${episodes.length} episodes and ${seasons.length} seasons`);
-      } catch (error) {
-        console.error(`WatchPage: Error fetching anime details:`, error);
+      } catch (error: any) {
+        console.warn(`WatchPage: Warning fetching anime details:`, error?.message || '');
         episodes = [];
         seasons = [];
       }
     } else {
-      console.error(`WatchPage: No series URL available for fetching anime details`);
+      console.warn(`WatchPage: No series URL available for fetching anime details`);
 
       // Try to extract series information from the episode URL as a fallback
       if (episodeUrl.includes('/episode/')) {
@@ -320,14 +320,14 @@ export default async function WatchPage({ searchParams }: { searchParams: { epis
               seasons = animeDetails?.seasons || [];
               seriesUrl = fallbackSeriesUrl; // Update the series URL
               console.log(`WatchPage: Fallback successful - fetched ${episodes.length} episodes and ${seasons.length} seasons`);
-            } catch (fallbackError) {
-              console.error(`WatchPage: Fallback also failed:`, fallbackError);
+            } catch (fallbackError: any) {
+              console.warn(`WatchPage: Fallback warning:`, fallbackError?.message || '');
               episodes = [];
               seasons = [];
             }
           }
-        } catch (extractError) {
-          console.error(`WatchPage: Error extracting series from episode URL:`, extractError);
+        } catch (extractError: any) {
+          console.warn(`WatchPage: Warning extracting series from episode URL:`, extractError?.message || '');
           episodes = [];
           seasons = [];
         }

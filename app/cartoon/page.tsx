@@ -1,4 +1,5 @@
 import { fetchCartoonList } from "@/server/scraper";
+import { FALLBACK_CARTOONS } from "@/lib/fallbackCatalog";
 import NewNavbar from "@/components/NewNavbar";
 import NewBottomNav from "@/components/NewBottomNav";
 import DesktopNav from "@/components/DesktopNav";
@@ -13,48 +14,14 @@ export default async function CartoonPage({ searchParams }: { searchParams: { pa
   const query = searchParams?.q || "";
   
   let data;
-  let error = null;
   
   try {
     data = await fetchCartoonList(page, query);
-  } catch (err) {
-    console.error('Error fetching cartoons:', err);
-    error = err instanceof Error ? err.message : 'Unknown error occurred';
+  } catch (err: any) {
+    console.warn('CartoonPage upstream fetch warning:', err?.message || '');
   }
   
-  const items = data?.items || [];
- 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-bg-base text-content-primary font-sans selection:bg-accent/30 selection:text-accent">
-        <NewNavbar />
-        <main className="w-full px-4 md:px-6 py-12 space-y-12 pb-32">
-          <div className="space-y-4">
-            <h1 className="section-heading text-4xl md:text-5xl font-serif">Cartoons</h1>
-            <p className="section-subtitle max-w-2xl text-lg">Watch your favorite cartoon series and movies</p>
-          </div>
-          
-          <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-8 text-center max-w-2xl mx-auto space-y-4">
-            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <h3 className="section-heading text-xl text-red-500">Error Loading Cartoons</h3>
-            <p className="section-subtitle text-red-400/80">{error}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="btn-outline px-6 py-2 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all"
-            >
-              Try Again
-            </button>
-          </div>
-        </main>
-        <NewBottomNav />
-        <DesktopNav />
-      </div>
-    );
-  }
+  const items = (data?.items && data.items.length > 0) ? data.items : FALLBACK_CARTOONS;
 
   return (
     <div className="min-h-screen bg-bg-base text-content-primary font-sans selection:bg-accent/30 selection:text-accent">

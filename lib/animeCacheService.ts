@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc, collection, query, limit, getDocs, orderBy, where, Timestamp, deleteDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, isFirebaseConfigured } from './firebase';
 import { AnimeDetailsResponse, SeriesListItem } from '@/server/types';
 
 export interface CachedAnime {
@@ -30,21 +30,20 @@ const STALE_THRESHOLD = 12 * 60 * 60 * 1000; // 12 hours
 
 class AnimeCacheService {
   private getDocRef(slug: string) {
-    // Sanitize slug to be used as ID
     const safeId = slug.replace(/[^a-zA-Z0-9_-]/g, '_');
     return doc(db, CACHE_COLLECTION, safeId);
   }
 
   async getCachedAnime(slug: string): Promise<CachedAnime | null> {
+    if (!isFirebaseConfigured) return null;
     try {
-      if (!db || typeof db.type === 'undefined' && Object.keys(db).length === 0) return null;
       const docSnap = await getDoc(this.getDocRef(slug));
       if (docSnap.exists()) {
         return docSnap.data() as CachedAnime;
       }
       return null;
-    } catch (e) {
-      console.error('AnimeCacheService: Error getting cached anime', e);
+    } catch (e: any) {
+      console.warn('AnimeCacheService: Warning getting cached anime:', e?.message || '');
       return null;
     }
   }
@@ -65,6 +64,7 @@ class AnimeCacheService {
   }
 
   async saveAnime(slug: string, data: Partial<CachedAnime>): Promise<void> {
+    if (!isFirebaseConfigured) return;
     try {
       const docRef = this.getDocRef(slug);
       const docSnap = await getDoc(docRef);
@@ -85,8 +85,8 @@ class AnimeCacheService {
           updatedAt: now
         });
       }
-    } catch (e) {
-      console.error('AnimeCacheService: Error saving anime', e);
+    } catch (e: any) {
+      console.warn('AnimeCacheService: Warning saving anime:', e?.message || '');
     }
   }
 
@@ -95,19 +95,20 @@ class AnimeCacheService {
   }
 
   async getAllCached(limitCount: number = 50): Promise<CachedAnime[]> {
+    if (!isFirebaseConfigured) return [];
     try {
       const q = query(collection(db, CACHE_COLLECTION), orderBy('lastFetched', 'desc'), limit(limitCount));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(d => d.data() as CachedAnime);
-    } catch (e) {
-      console.error('AnimeCacheService: Error getting all cached', e);
+    } catch (e: any) {
+      console.warn('AnimeCacheService: Warning getting all cached:', e?.message || '');
       return [];
     }
   }
 
   async searchCached(searchTerm: string): Promise<CachedAnime[]> {
+    if (!isFirebaseConfigured) return [];
     try {
-      // Basic search on title (case-sensitive unfortunately in Firestore without full-text)
       const q = query(
         collection(db, CACHE_COLLECTION), 
         where('title', '>=', searchTerm),
@@ -116,33 +117,32 @@ class AnimeCacheService {
       );
       const snapshot = await getDocs(q);
       return snapshot.docs.map(d => d.data() as CachedAnime);
-    } catch (e) {
-      console.error('AnimeCacheService: Error searching cached', e);
+    } catch (e: any) {
+      console.warn('AnimeCacheService: Warning searching cached:', e?.message || '');
       return [];
     }
   }
 
   async clearAllCache(): Promise<void> {
+    if (!isFirebaseConfigured) return;
     try {
       const q = query(collection(db, CACHE_COLLECTION));
       const snapshot = await getDocs(q);
       const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
       await Promise.all(deletePromises);
       console.log('AnimeCacheService: Database cleared successfully');
-    } catch (e) {
-      console.error('AnimeCacheService: Error clearing database', e);
-      throw e;
+    } catch (e: any) {
+      console.warn('AnimeCacheService: Warning clearing database:', e?.message || '');
     }
   }
 
   async deleteCache(slug: string): Promise<void> {
+    if (!isFirebaseConfigured || !slug) return;
     try {
-      if (!slug) return;
       const safeId = slug.replace(/[^a-zA-Z0-9_-]/g, '_');
       await deleteDoc(doc(db, CACHE_COLLECTION, safeId));
-    } catch (e) {
-      console.error(`AnimeCacheService: Error deleting cache for ${slug}`, e);
-      throw e;
+    } catch (e: any) {
+      console.warn(`AnimeCacheService: Warning deleting cache for ${slug}:`, e?.message || '');
     }
   }
 }

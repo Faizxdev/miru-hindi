@@ -62,8 +62,8 @@ export default async function TestScraperPage() {
       </div>
     );
     
-  } catch (error) {
-    console.error("Test scraper page error:", error);
+  } catch (error: any) {
+    console.warn("Test scraper page error:", error?.message || '');
     
     return (
       <div className="min-h-screen bg-black text-white p-8">
